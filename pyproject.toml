@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "cashu-ui"
+version = "0.1.0"
+description = "A graphical user interface for Cashu wallet"
+authors = ["Calle <callebtc@protonmail.com>"]
+readme = "README.md"
+packages = [{include = "ui"}]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+asyncio = "^3.4.3"
+pyinstaller = {version = "^5.5", python = ">=3.7,<3.12"}
+PyQt6 = "^6.4.0"
+pyoxidizer = "^0.22.0"
+cashu = "^0.4.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = {version = "^22.10.0", allow-prereleases = true}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
