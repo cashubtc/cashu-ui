@@ -1,8 +1,9 @@
 import sys
 from urllib.request import HTTPDefaultErrorHandler
 from PyQt6 import QtWidgets, uic, QtGui, QtCore
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread
 from PyQt6.QtWidgets import QWidget, QTableWidget
+
 import asyncio
 import os
 import json
@@ -21,11 +22,8 @@ from cashu.wallet.wallet import Wallet as Wallet
 from cashu.core.settings import CASHU_DIR, DEBUG, ENV_FILE, LIGHTNING, MINT_URL, VERSION
 from cashu.core.base import Proof, Invoice
 
-
+import worker
 import os
-
-app = QtWidgets.QApplication(sys.argv)
-app.setApplicationName("Cashu")
 
 walletname = "wallet"
 wallet = Wallet(MINT_URL, os.path.join(CASHU_DIR, walletname))
@@ -60,17 +58,34 @@ def resource_path(relative_path):
 
 class App:
     def __init__(self):
+        asyncio.run(init_wallet(wallet))
+        self.thread = None
         self.window = uic.loadUi(resource_path("ui/mainwindow.ui"))
         self.window.button_send.clicked.connect(self.button_send_clicked)
         self.window.button_receive.clicked.connect(self.button_receive_clicked)
         self.window.button_pay.clicked.connect(self.button_pay_clicked)
         self.window.button_invoice.clicked.connect(self.button_invoice_clicked)
         self.window.show()
-        asyncio.run(init_wallet(wallet))
         self.set_app_icon()
         self.init_mainwindow()
         app.exec()
         return
+
+    def check_invoice_worker(self, invoice: Invoice):
+        # https://stackoverflow.com/questions/6783194/background-thread-with-qthread-in-pyqt
+        def invoice_worker_ready(status):
+            print(f"got data from worker: {status}")
+            if status == "paid":
+                self.window.text_field.setPlainText("Payment received.")
+                self.init_mainwindow()
+
+        self.invoice_worker = worker.Worker(wallet.mint, invoice)  # no parent!
+        self.thread = QThread()  # no parent!
+        self.invoice_worker.strReady.connect(invoice_worker_ready)
+        self.invoice_worker.moveToThread(self.thread)
+        self.invoice_worker.finished.connect(self.thread.quit)
+        self.thread.started.connect(self.invoice_worker.procCounter)
+        self.thread.start()
 
     def set_app_icon(self):
         # set app icon
@@ -102,7 +117,6 @@ class App:
         async def run(*args, **kwargs):
             reserved_proofs = await get_reserved_proofs(wallet.db)
             if len(reserved_proofs):
-                print(f"--------------------------\n")
                 sorted_proofs = sorted(reserved_proofs, key=itemgetter("send_id"))
                 for i, (key, value) in enumerate(
                     groupby(sorted_proofs, key=itemgetter("send_id"))
@@ -115,12 +129,6 @@ class App:
                     reserved_date = datetime.utcfromtimestamp(
                         int(grouped_proofs[0].time_reserved)
                     ).strftime("%Y-%m-%d %H:%M:%S")
-
-                    print(
-                        f"#{i} Amount: {sum_proofs(grouped_proofs)} sat Time: {reserved_date} ID: {key}\n"
-                    )
-                    print(f"With secret: {coin}\n\nSecretless: {coin_hidden_secret}\n")
-                    print(f"--------------------------\n")
 
                     rowPosition = table.rowCount() - 1
                     table.insertRow(rowPosition)
@@ -253,24 +261,6 @@ class App:
     def button_invoice_clicked(self, *args, **kwargs):
         print("Invoice Clicked!")
 
-        # async def invoice_checker(amount, invoice: Invoice):
-        #     check_until = time.time() + 5 * 60  # check for five minutes
-        #     print("")
-        #     print(
-        #         f"Checking invoice ...",
-        #         end="",
-        #         flush=True,
-        #     )
-        #     paid = False
-        #     while time.time() < check_until and not paid:
-        #         time.sleep(3)
-        #         try:
-        #             await wallet.mint(amount, invoice.hash)
-        #             paid = True
-        #             self.window.text_field.setPlainText("Invoice paid.")
-        #         except Exception as e:
-        #             self.show_error(str(e))
-
         async def run(*args, **kwargs):
             input = self.window.text_field.toPlainText()
             try:
@@ -284,19 +274,14 @@ class App:
             invoice = await wallet.request_mint(amount)
             if invoice.pr:
                 self.window.text_field.setPlainText(invoice.pr)
+                # kick off the worker that checks this invoice
+                try:
+                    self.check_invoice_worker(invoice)
+                except:
+                    pass
                 return amount, invoice
 
         amount, invoice = self.async_warpper(run)
-
-        # loop = asyncio.new_event_loop()
-        # # asyncio.set_event_loop(loop)
-        # # loop.create_task(invoice_checker(amount=amount, invoice=invoice))
-        # # asyncio.ensure_future(invoice_checker(amount=amount, invoice=invoice))
-        # # loop.run_forever()
-        # loop.run_in_executor(
-        #     None, invoice_checker, dict(amount=amount, invoice=invoice)
-        # )
-
         self.init_mainwindow()
 
     def invoice_pending_clicked(self, *args, **kwargs):
@@ -320,6 +305,11 @@ class App:
         self.async_warpper(run, *args, **kwargs)
         self.init_mainwindow()
 
+    async def printer(self):
+        while True:
+            time.sleep(1)
+            print("printer")
+
     def async_warpper(self, f, *args, **kwargs):
         try:
             return asyncio.run(f(*args, **kwargs))
@@ -337,4 +327,6 @@ class App:
 
 
 if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationName("Cashu")
     app = App()
