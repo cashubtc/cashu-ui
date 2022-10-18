@@ -471,14 +471,6 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
-name = "pyoxidizer"
-version = "0.22.0"
-description = "Package self-contained Python applications"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -784,7 +776,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "b3a8144c75727bf73a0f42c3d48ea77fa686a50354035234633cc616a7aa1e81"
+content-hash = "ff7f2c97726e74f6fbe57eb710bc8de3d88447b31f235344dbfa1cddf62eab62"
 
 [metadata.files]
 altgraph = [
@@ -1055,14 +1047,6 @@ pyinstaller = [
 pyinstaller-hooks-contrib = [
     {file = "pyinstaller-hooks-contrib-2022.10.tar.gz", hash = "sha256:e5edd4094175e78c178ef987b61be19efff6caa23d266ade456fc753e847f62e"},
     {file = "pyinstaller_hooks_contrib-2022.10-py2.py3-none-any.whl", hash = "sha256:d1dd6ea059dc30e77813cc12a5efa8b1d228e7da8f5b884fe11775f946db1784"},
-]
-pyoxidizer = [
-    {file = "pyoxidizer-0.22.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:a07166628b1c838855d2208daad1268ed430f13751a903966ed96db1713be3fd"},
-    {file = "pyoxidizer-0.22.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:785f87f8084ab94cd47477cc8258cf126aaef0ca7e0e52bb1f4b666cffc388f8"},
-    {file = "pyoxidizer-0.22.0-py3-none-manylinux2010_x86_64.whl", hash = "sha256:6e1c5ad4ee1990d58ef9d09c3f950c11f921df8b30325a8c130cf1f3d2fa7a28"},
-    {file = "pyoxidizer-0.22.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:8681e0d638be6b14d5f47810364b63df585deb1483ed65f09597a6d3cb35f1dc"},
-    {file = "pyoxidizer-0.22.0-py3-none-win32.whl", hash = "sha256:de3b607ffc1eac72d0b7bbefb67bc5afd08cbfe04c2ad2e4b7fe58de695eea74"},
-    {file = "pyoxidizer-0.22.0-py3-none-win_amd64.whl", hash = "sha256:774813b480e7ca2c620bb44f29dab6bbec33215278cdcd64421462be6a4443df"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
