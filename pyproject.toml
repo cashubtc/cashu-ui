@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "A graphical user interface for Cashu wallet"
 authors = ["Calle <callebtc@protonmail.com>"]
 readme = "README.md"
-packages = [{include = "ui"}]
 
 [tool.poetry.dependencies]
 python = "^3.7"
