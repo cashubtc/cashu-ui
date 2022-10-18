@@ -24,10 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Package Application
-      uses: JackMcKew/pyinstaller-action-linux@main
-      with:
-        path: app.py
+        uses: JackMcKew/pyinstaller-action-linux@main
+        with:
+          path: app.py
       - uses: actions/upload-artifact@v2
-      with:
-        name: linux-build
-        path: dist
+        with:
+          name: linux-build
+          path: dist
