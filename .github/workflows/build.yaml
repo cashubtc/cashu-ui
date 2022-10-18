@@ -2,9 +2,9 @@ name: Pyinstaller
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   windows:
@@ -26,8 +26,8 @@ jobs:
       - name: Package Application
       uses: JackMcKew/pyinstaller-action-linux@main
       with:
-          path: app.py
+        path: app.py
       - uses: actions/upload-artifact@v2
       with:
-          name: linux-build
-          path: dist
+        name: linux-build
+        path: dist
