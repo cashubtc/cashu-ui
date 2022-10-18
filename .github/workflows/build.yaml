@@ -9,6 +9,10 @@ on:
 jobs:
   windows:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        poetry-version: ["1.2.1"]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Poetry ${{ matrix.poetry-version }}
@@ -27,6 +31,10 @@ jobs:
           path: dist
   linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        poetry-version: ["1.2.1"]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Poetry ${{ matrix.poetry-version }}
