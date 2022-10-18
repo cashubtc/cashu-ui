@@ -776,7 +776,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "ff7f2c97726e74f6fbe57eb710bc8de3d88447b31f235344dbfa1cddf62eab62"
+content-hash = "501aead52961cb13b7d40f2bf95a4b638b61c9c3b87cabfaf8738177f50c7849"
 
 [metadata.files]
 altgraph = [
