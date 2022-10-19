@@ -95,6 +95,7 @@ class App:
         app_icon.addFile("ui/icons/32x32.png", QtCore.QSize(32, 32))
         app_icon.addFile("ui/icons/48x48.png", QtCore.QSize(48, 48))
         app_icon.addFile("ui/icons/256x256.png", QtCore.QSize(256, 256))
+        app_icon.addFile("ui/icons/512x512.png", QtCore.QSize(512, 512))
         app.setWindowIcon(app_icon)
 
     def init_mainwindow(self):
