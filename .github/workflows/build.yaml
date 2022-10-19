@@ -26,7 +26,7 @@ jobs:
       - name: Install packages
         run: poetry install --with dev
       - name: Build app
-        run: pyinstaller app.spec
+        run: poetry run pyinstaller app.spec
       - uses: actions/upload-artifact@v2
         with:
           name: windows-build
@@ -50,7 +50,7 @@ jobs:
       - name: Install packages
         run: poetry install --with dev
       - name: Build app
-        run: pyinstaller app.spec
+        run: poetry run pyinstaller app.spec
       - uses: actions/upload-artifact@v2
         with:
           name: windows-build
@@ -74,7 +74,7 @@ jobs:
       - name: Install packages
         run: poetry install --with dev
       - name: Build app
-        run: pyinstaller app.spec
+        run: poetry run pyinstaller app.spec
       - uses: actions/upload-artifact@v2
         with:
           name: linux-build
