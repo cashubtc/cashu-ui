@@ -8,7 +8,7 @@ on:
 
 jobs:
   windows:
-    runs-on: ubuntu-latest
+    runs-on: windodows-latest
     strategy:
       matrix:
         python-version: ["3.9"]
@@ -25,10 +25,32 @@ jobs:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install packages
         run: poetry install --with dev
-      - name: Package Application
-        uses: JackMcKew/pyinstaller-action-windows@main
+      - name: Build app
+        run: pyinstaller app.spec
+      - uses: actions/upload-artifact@v2
         with:
-          path: app.py
+          name: windows-build
+          path: dist
+  mac:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        poetry-version: ["1.2.1"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Poetry ${{ matrix.poetry-version }}
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Install packages
+        run: poetry install --with dev
+      - name: Build app
+        run: pyinstaller app.spec
       - uses: actions/upload-artifact@v2
         with:
           name: windows-build
@@ -51,10 +73,8 @@ jobs:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Install packages
         run: poetry install --with dev
-      - name: Package Application
-        uses: JackMcKew/pyinstaller-action-linux@main
-        with:
-          path: app.py
+      - name: Build app
+        run: pyinstaller app.spec
       - uses: actions/upload-artifact@v2
         with:
           name: linux-build
