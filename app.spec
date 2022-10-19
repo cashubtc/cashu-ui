@@ -51,7 +51,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name="Cashu.app",
-    icon="ui/icons/mac.icns",
+    icon="ui/icons/icon.icns",
     bundle_identifier="org.cashu.ui",
     info_plist={
         "NSPrincipalClass": "NSApplication",

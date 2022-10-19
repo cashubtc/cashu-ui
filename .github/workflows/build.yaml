@@ -53,7 +53,7 @@ jobs:
         run: poetry run pyinstaller app.spec
       - uses: actions/upload-artifact@v2
         with:
-          name: windows-build
+          name: macos-build
           path: dist
   linux:
     runs-on: ubuntu-latest

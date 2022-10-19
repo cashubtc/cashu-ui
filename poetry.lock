@@ -573,14 +573,6 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "qasync"
-version = "0.23.0"
-description = "Implementation of the PEP 3156 Event-Loop with Qt."
-category = "main"
-optional = false
-python-versions = "~=3.6"
-
-[[package]]
 name = "Represent"
 version = "1.6.0.post0"
 description = "Create __repr__ automatically or declaratively."
@@ -784,7 +776,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "7e5631fcb8b24d2d81ec5923f310ef760948bbd02f1f9b2a401501d6d3cbf3ff"
+content-hash = "501aead52961cb13b7d40f2bf95a4b638b61c9c3b87cabfaf8738177f50c7849"
 
 [metadata.files]
 altgraph = [
@@ -1106,10 +1098,6 @@ python-dotenv = [
 pywin32-ctypes = [
     {file = "pywin32-ctypes-0.2.0.tar.gz", hash = "sha256:24ffc3b341d457d48e8922352130cf2644024a4ff09762a2261fd34c36ee5942"},
     {file = "pywin32_ctypes-0.2.0-py2.py3-none-any.whl", hash = "sha256:9dc2d991b3479cc2df15930958b674a48a227d5361d413827a4cfd0b5876fc98"},
-]
-qasync = [
-    {file = "qasync-0.23.0-py3-none-any.whl", hash = "sha256:7968d3485678d2ebcb5d6cdfdd36515425a02062ca9db7bb2e0e6bd1aaad6ec1"},
-    {file = "qasync-0.23.0.tar.gz", hash = "sha256:8965ec313e0107148d98e8ac1e77a77dce74de3cd97055a1aa62d513a3793a14"},
 ]
 Represent = [
     {file = "Represent-1.6.0.post0-py2.py3-none-any.whl", hash = "sha256:99142650756ef1998ce0661568f54a47dac8c638fb27e3816c02536575dbba8c"},
