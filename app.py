@@ -1,3 +1,4 @@
+from cProfile import label
 import sys
 from urllib.request import HTTPDefaultErrorHandler
 from PyQt6 import QtWidgets, uic, QtGui, QtCore
@@ -19,7 +20,15 @@ from cashu.core.helpers import fee_reserve, sum_proofs
 
 from cashu.core.migrations import migrate_databases
 from cashu.wallet.wallet import Wallet as Wallet
-from cashu.core.settings import CASHU_DIR, DEBUG, ENV_FILE, LIGHTNING, MINT_URL, VERSION
+from cashu.core.settings import (
+    CASHU_DIR,
+    DEBUG,
+    ENV_FILE,
+    LIGHTNING,
+    MINT_URL,
+    VERSION,
+    TOR,
+)
 from cashu.core.base import Proof, Invoice
 
 import worker
@@ -27,13 +36,6 @@ import os
 
 walletname = "wallet"
 wallet = Wallet(MINT_URL, os.path.join(CASHU_DIR, walletname))
-
-
-async def init_wallet(wallet: Wallet):
-    """Performs migrations and loads proofs from db."""
-    await migrate_databases(wallet.db, migrations)
-    await wallet.load_mint()
-    await wallet.load_proofs()
 
 
 def table_headers(table: QTableWidget, headers: List[str]):
@@ -58,7 +60,6 @@ def resource_path(relative_path):
 
 class App:
     def __init__(self):
-        asyncio.run(init_wallet(wallet))
         self.thread = None
         self.window = uic.loadUi(resource_path("ui/mainwindow.ui"))
         self.window.button_send.clicked.connect(self.button_send_clicked)
@@ -66,10 +67,18 @@ class App:
         self.window.button_pay.clicked.connect(self.button_pay_clicked)
         self.window.button_invoice.clicked.connect(self.button_invoice_clicked)
         self.window.show()
+        self.async_warpper(self.init_wallet)
         self.set_app_icon()
         self.init_mainwindow()
         app.exec()
         return
+
+    async def init_wallet(self):
+        """Performs migrations and loads proofs from db."""
+        await migrate_databases(wallet.db, migrations)
+        await wallet.load_proofs()
+        await wallet.load_mint()
+        self.update_main_label()
 
     def check_invoice_worker(self, invoice: Invoice):
         # https://stackoverflow.com/questions/6783194/background-thread-with-qthread-in-pyqt
@@ -98,12 +107,19 @@ class App:
         app_icon.addFile("ui/icons/512x512.png", QtCore.QSize(512, 512))
         app.setWindowIcon(app_icon)
 
+    def update_main_label(self):
+        label_text = f"Cashu {VERSION}"
+        if TOR:
+            label_text += f" Tor: {'🟢' if wallet.tor.is_running() else '🔴'}"
+        label_text += "\n"
+        label_text += f"Mint: {wallet.url}"
+        self.window.label_mint_url.setText(label_text)
+
     def init_mainwindow(self):
         self.window.tabWidget.setTabText(0, "Tokens")
         self.window.tabWidget.setTabText(1, "Pending")
+        self.update_main_label()
         self.update_balance()
-        self.window.label_mint_url.setText(f"Mint: {wallet.url}")
-
         self.list_amounts()
         self.list_pending()
         self.list_invoices()
