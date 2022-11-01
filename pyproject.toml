@@ -10,7 +10,7 @@ python = "^3.7"
 asyncio = "^3.4.3"
 pyinstaller = {version = "^5.5", python = ">=3.7,<3.12"}
 PyQt6 = "^6.0.0"
-cashu = {path = "../cashu"}
+cashu = "0.5.0"
 
 
 [tool.poetry.group.dev.dependencies]

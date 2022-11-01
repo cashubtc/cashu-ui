@@ -77,8 +77,36 @@ class App:
         """Performs migrations and loads proofs from db."""
         await migrate_databases(wallet.db, migrations)
         await wallet.load_proofs()
-        await wallet.load_mint()
+        # await wallet.load_mint()
+        self.load_mint_worker()
+        self.mint_label_update_worker()
         self.update_main_label()
+
+    def load_mint_worker(self):
+        def load_mint_ready():
+            self.update_main_label()
+
+        self.mint_worker = worker.LoadMintWorker(wallet)
+        self.load_mint_thread = QThread()
+        self.mint_worker.finished.connect(load_mint_ready)
+        self.mint_worker.moveToThread(self.load_mint_thread)
+        self.load_mint_thread.started.connect(self.mint_worker.procLoadMint)
+        self.load_mint_thread.start()
+
+    def mint_label_update_worker(self):
+        """Updates the mint label every n seconds"""
+
+        def update_wallet_state():
+            self.update_main_label()
+
+        self.wallet_state_worker = worker.UpdateWalletStateWorker(wallet)
+        self.wallet_state_thread = QThread()
+        self.wallet_state_worker.update.connect(update_wallet_state)
+        self.wallet_state_worker.moveToThread(self.wallet_state_thread)
+        self.wallet_state_thread.started.connect(
+            self.wallet_state_worker.procCheckWalletState
+        )
+        self.wallet_state_thread.start()
 
     def check_invoice_worker(self, invoice: Invoice):
         # https://stackoverflow.com/questions/6783194/background-thread-with-qthread-in-pyqt
@@ -88,8 +116,12 @@ class App:
                 self.window.text_field.setPlainText("Payment received.")
                 self.init_mainwindow()
 
-        self.invoice_worker = worker.Worker(wallet.mint, invoice)  # no parent!
-        self.thread = QThread()  # no parent!
+        self.invoice_worker = worker.CheckInvoiceWorker(
+            wallet.mint, invoice
+        )  # no parent!
+        if self.thread:
+            self.thread.terminate()
+        self.thread = QThread(parent=self)  # no parent!
         self.invoice_worker.strReady.connect(invoice_worker_ready)
         self.invoice_worker.moveToThread(self.thread)
         self.invoice_worker.finished.connect(self.thread.quit)
@@ -110,7 +142,10 @@ class App:
     def update_main_label(self):
         label_text = f"Cashu {VERSION}"
         if TOR:
-            label_text += f" Tor: {'🟢' if wallet.tor.is_running() else '🔴'}"
+            running = False
+            if hasattr(wallet, "tor"):
+                running = wallet.tor.is_running()
+            label_text += f" Tor: {'🟢' if running else '🔴'}"
         label_text += "\n"
         label_text += f"Mint: {wallet.url}"
         self.window.label_mint_url.setText(label_text)
@@ -220,7 +255,7 @@ class App:
                     rowPosition, 2, QtWidgets.QTableWidgetItem(str(invoice.pr))
                 )
             table_headers(table, ["amount", "status", "invoice"])
-            table.cellClicked.connect(self.invoice_pending_clicked)
+            table.cellDoubleClicked.connect(self.invoice_pending_clicked)
 
         self.async_warpper(run)
 
