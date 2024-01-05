@@ -20,22 +20,27 @@ from cashu.core.helpers import fee_reserve, sum_proofs
 
 from cashu.core.migrations import migrate_databases
 from cashu.wallet.wallet import Wallet as Wallet
-from cashu.core.settings import (
-    CASHU_DIR,
-    DEBUG,
-    ENV_FILE,
-    LIGHTNING,
-    MINT_URL,
-    VERSION,
-    TOR,
-)
+from cashu.core.settings import settings
 from cashu.core.base import Proof, Invoice
+
+from cashu.wallet.helpers import (
+    deserialize_token_from_string,
+    init_wallet,
+    list_mints,
+    receive,
+    send,
+)
 
 import worker
 import os
+import traceback
 
 walletname = "wallet"
-wallet = Wallet(MINT_URL, os.path.join(CASHU_DIR, walletname))
+db_path = os.path.join(settings.cashu_dir, walletname)
+# allow to perform migrations
+wallet = asyncio.run(Wallet.with_db(settings.mint_url, db_path, name = walletname, skip_private_key = True))
+# load with private keys
+wallet = asyncio.run(Wallet.with_db(settings.mint_url, db_path, name = walletname))
 
 
 def table_headers(table: QTableWidget, headers: List[str]):
@@ -74,8 +79,7 @@ class App:
         return
 
     async def init_wallet(self):
-        """Performs migrations and loads proofs from db."""
-        await migrate_databases(wallet.db, migrations)
+        """Loads proofs from db."""
         await wallet.load_proofs()
         # await wallet.load_mint()
         self.load_mint_worker()
@@ -118,10 +122,11 @@ class App:
 
         self.invoice_worker = worker.CheckInvoiceWorker(
             wallet.mint, invoice
-        )  # no parent!
+        )
         if self.thread:
             self.thread.terminate()
-        self.thread = QThread(parent=self)  # no parent!
+
+        self.thread = QThread()
         self.invoice_worker.strReady.connect(invoice_worker_ready)
         self.invoice_worker.moveToThread(self.thread)
         self.invoice_worker.finished.connect(self.thread.quit)
@@ -140,8 +145,8 @@ class App:
         app.setWindowIcon(app_icon)
 
     def update_main_label(self):
-        label_text = f"Cashu {VERSION}"
-        if TOR:
+        label_text = f"Cashu {settings.version}"
+        if settings.tor:
             running = False
             if hasattr(wallet, "tor"):
                 running = wallet.tor.is_running()
@@ -174,10 +179,7 @@ class App:
                     groupby(sorted_proofs, key=itemgetter("send_id"))
                 ):
                     grouped_proofs = list(value)
-                    coin = await wallet.serialize_proofs(grouped_proofs)
-                    coin_hidden_secret = await wallet.serialize_proofs(
-                        grouped_proofs, hide_secrets=True
-                    )
+                    token = await wallet.serialize_proofs(grouped_proofs)
                     reserved_date = datetime.utcfromtimestamp(
                         int(grouped_proofs[0].time_reserved)
                     ).strftime("%Y-%m-%d %H:%M:%S")
@@ -189,7 +191,7 @@ class App:
                         0,
                         QtWidgets.QTableWidgetItem(str(sum_proofs(grouped_proofs))),
                     )
-                    table.setItem(rowPosition, 1, QtWidgets.QTableWidgetItem(str(coin)))
+                    table.setItem(rowPosition, 1, QtWidgets.QTableWidgetItem(str(token)))
                     table.setItem(
                         rowPosition,
                         2,
@@ -252,7 +254,7 @@ class App:
                     ),
                 )
                 table.setItem(
-                    rowPosition, 2, QtWidgets.QTableWidgetItem(str(invoice.pr))
+                    rowPosition, 2, QtWidgets.QTableWidgetItem(str(invoice.bolt11))
                 )
             table_headers(table, ["amount", "status", "invoice"])
             table.cellDoubleClicked.connect(self.invoice_pending_clicked)
@@ -274,9 +276,11 @@ class App:
             _, send_proofs = await wallet.split_to_send(
                 wallet.proofs, amount, set_reserved=True
             )
-            coin = await wallet.serialize_proofs(send_proofs)
-            print(f"Send Clicked! {coin}")
-            self.window.text_field.setPlainText(coin)
+
+            token = await wallet.serialize_proofs(send_proofs, include_mints=True)
+            await wallet.set_reserved(send_proofs, reserved=True)
+            print(f"Send Clicked! {token}")
+            self.window.text_field.setPlainText(token)
 
         self.async_warpper(run)
         self.init_mainwindow()
@@ -286,10 +290,17 @@ class App:
             input = self.window.text_field.toPlainText()
             if len(input) < 16:
                 raise Exception("no proof provided.")
-            coin = input
-            proofs = [Proof(**p) for p in json.loads(base64.urlsafe_b64decode(coin))]
-            _, _ = await wallet.redeem(proofs)
-            print(f"Receive Clicked! {coin}")
+            token = input
+            tokenObj = deserialize_token_from_string(token)
+            # TODO: verify that we trust all mints in these tokens
+            # ask the user if they want to trust the new mints
+            #for mint_url in set([t.mint for t in tokenObj.token if t.mint]):
+            #    mint_wallet = Wallet(
+            #        mint_url, os.path.join(settings.cashu_dir, wallet.name)
+            #    )
+            #    await verify_mint(mint_wallet, mint_url)
+            await receive(wallet, tokenObj)
+            print(f"Receive Clicked! {token}")
             self.window.text_field.setPlainText("")
 
         self.async_warpper(run)
@@ -324,12 +335,13 @@ class App:
                 print("amount must be greater than 0.")
                 return
             invoice = await wallet.request_mint(amount)
-            if invoice.pr:
-                self.window.text_field.setPlainText(invoice.pr)
+            if invoice.bolt11:
+                self.window.text_field.setPlainText(invoice.bolt11)
                 # kick off the worker that checks this invoice
                 try:
                     self.check_invoice_worker(invoice)
                 except:
+                    traceback.print_exception(e)
                     pass
                 return amount, invoice
 
@@ -351,6 +363,7 @@ class App:
                     paid = True
                     self.window.text_field.setPlainText("Invoice paid.")
                 except Exception as e:
+                    traceback.print_exception(e)
                     self.show_error(str(e))
                     pass
 
@@ -366,6 +379,7 @@ class App:
         try:
             return asyncio.run(f(*args, **kwargs))
         except Exception as e:
+            traceback.print_exception(type(e), e, e.__traceback__)
             self.show_error(str(e))
             return e
 

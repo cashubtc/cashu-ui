@@ -15,15 +15,14 @@ class CheckInvoiceWorker(QObject):
         self.mint = mint
 
     finished = pyqtSignal()
-    intReady = pyqtSignal(int)
     strReady = pyqtSignal(str)
 
     @pyqtSlot()
     def procCounter(self):  # A slot takes no params
-        print(f"Checking invoice hash {self.invoice.hash}")
-        for i in range(1, 10):
+        print(f"Checking invoice id {self.invoice.id}")
+        for i in range(1, 60): # check for 5 minutes
             try:
-                asyncio.run(self.mint(self.invoice.amount, self.invoice.hash))
+                asyncio.run(self.mint(self.invoice.amount, id=self.invoice.id))
                 self.strReady.emit("paid")
                 break
             except Exception as e:
